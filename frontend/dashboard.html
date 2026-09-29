@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureDocs - Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">🔒 SecureDocs</div>
+    <div class="user-area">
+      <span id="userInfo" class="badge"></span>
+      <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <section class="card">
+      <h3>📁 Upload Documents</h3>
+      <p class="muted small">PDF, DOCX or TXT (max 10MB)</p>
+
+      <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
+
+      <label for="access">Who can view this file?</label>
+      <select id="access">
+        <option value="employee">All employees</option>
+        <option value="admin">Admin only</option>
+      </select>
+
+      <button class="btn" onclick="handleUpload()">Upload</button>
+      <p id="uploadMsg" class="error"></p>
+
+      <h4>Uploaded files</h4>
+      <ul id="fileList" class="file-list"></ul>
+    </section>
+
+    <section class="card chat-card">
+      <h3>💬 Ask your documents</h3>
+      <div id="chatBox" class="chat-box"></div>
+      <div class="chat-input">
+        <input type="text" id="question" placeholder="Type your question..."
+               onkeydown="if(event.key==='Enter') handleAsk()">
+        <button class="btn" onclick="handleAsk()">Send ➤</button>
+      </div>
+    </section>
+
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
