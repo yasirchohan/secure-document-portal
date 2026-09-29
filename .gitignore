@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+secret.key
+portal.db
+encrypted_files/
+.vscode/
