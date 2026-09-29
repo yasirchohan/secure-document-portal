@@ -1,6 +1,6 @@
 // ====== SETTINGS ======
 const DEMO = false;
-const API_URL = "http://127.0.0.1:8000";  // FastAPI address (later)
+const API_URL = "https://partridge-other-seismic.ngrok-free.dev";  // FastAPI address (later)
 
 // ====== LOGIN ======
 async function handleLogin() {

@@ -21,7 +21,7 @@ app = FastAPI(title="SecureDocs API")
 # Allow the frontend (any localhost port) to talk to this backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(127\.0\.0\.1|localhost):\d+",
+    allow_origin_regex=r"https://.*\.(ngrok-free\.(app|dev)|netlify\.app)",
     allow_methods=["*"],
     allow_headers=["*"],
 )
