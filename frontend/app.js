@@ -1,6 +1,6 @@
 // ====== SETTINGS ======
 const DEMO = false;
-const API_URL = "http://192.168.1.101:8000";
+const API_URL = " https://partridge-other-seismic.ngrok-free.dev";
 
 function extraHeaders() {
   return { "ngrok-skip-browser-warning": "true" };

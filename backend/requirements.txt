@@ -4,3 +4,6 @@ bcrypt
 pyjwt
 cryptography
 python-multipart
+google-generativeai
+pypdf
+python-docx

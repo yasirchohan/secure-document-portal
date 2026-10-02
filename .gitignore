@@ -4,3 +4,4 @@ secret.key
 portal.db
 encrypted_files/
 .vscode/
+.env

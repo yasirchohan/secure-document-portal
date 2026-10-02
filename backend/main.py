@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import os
 import sqlite3
 import datetime
@@ -150,13 +152,33 @@ def init_files_table():
             original_name TEXT NOT NULL,
             stored_name TEXT NOT NULL,
             allowed_role TEXT NOT NULL,
-            uploaded_by TEXT NOT NULL
+            uploaded_by TEXT NOT NULL,
+            content TEXT DEFAULT ''
         )
     """)
     conn.commit()
     conn.close()
 
 init_files_table()
+import pypdf
+import docx
+import google.generativeai as genai
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+genai.configure(api_key=GEMINI_API_KEY)
+
+def extract_text(raw_bytes: bytes, filename: str) -> str:
+    try:
+        if filename.lower().endswith(".pdf"):
+            reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
+            return "\n".join(page.extract_text() or "" for page in reader.pages)
+        elif filename.lower().endswith(".docx"):
+            doc = docx.Document(io.BytesIO(raw_bytes))
+            return "\n".join(p.text for p in doc.paragraphs)
+        else:  # .txt
+            return raw_bytes.decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
 
 
 # ====== UPLOAD (encrypts the file, saves who can access it) ======
@@ -170,6 +192,7 @@ async def upload_file(
         raise HTTPException(status_code=400, detail="Invalid role")
 
     raw_bytes = await file.read()
+    extracted_text = extract_text(raw_bytes, file.filename)
     if len(raw_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
@@ -182,9 +205,9 @@ async def upload_file(
 
     conn = get_db()
     conn.execute(
-        "INSERT INTO documents (id, original_name, stored_name, allowed_role, uploaded_by) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (doc_id, file.filename, stored_name, allowed_role, user["email"]),
+        "INSERT INTO documents (id, original_name, stored_name, allowed_role, uploaded_by, content) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (doc_id, file.filename, stored_name, allowed_role, user["email"], extracted_text),
     )
     conn.commit()
     conn.close()
@@ -215,21 +238,29 @@ class AskData(BaseModel):
 def ask_question(data: AskData, user: dict = Depends(get_current_user)):
     conn = get_db()
     if user["role"] == "admin":
-        rows = conn.execute("SELECT original_name FROM documents").fetchall()
+        rows = conn.execute("SELECT original_name, content FROM documents").fetchall()
     else:
         rows = conn.execute(
-            "SELECT original_name FROM documents WHERE allowed_role = ?", (user["role"],)
+            "SELECT original_name, content FROM documents WHERE allowed_role = ?", (user["role"],)
         ).fetchall()
     conn.close()
 
-    visible_files = [r["original_name"] for r in rows]
-    if not visible_files:
-        answer = "No documents are available to you yet. Ask an admin to upload one."
-    else:
-        # Placeholder until the AI team's RAG model is connected.
-        answer = (
-            f"(Demo) I can see {len(visible_files)} document(s) you're allowed to access: "
-            f"{', '.join(visible_files)}. The real AI-generated answer will appear here "
-            f"once the AI team's RAG model is connected."
-        )
-    return {"answer": answer}
+    if not rows:
+        return {"answer": "No documents are available to you yet. Ask an admin to upload one."}
+
+    context = "\n\n".join(f"Document: {r['original_name']}\n{r['content'][:3000]}" for r in rows)
+
+    prompt = f"""You are a helpful assistant answering questions based only on the documents below.
+If the answer isn't in the documents, say so.
+
+{context}
+
+Question: {data.question}
+Answer:"""
+
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        return {"answer": response.text}
+    except Exception as e:
+        return {"answer": f"AI error: {str(e)}"}
