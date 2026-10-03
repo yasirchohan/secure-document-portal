@@ -259,7 +259,7 @@ Question: {data.question}
 Answer:"""
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-flash-latest")
         response = model.generate_content(prompt)
         return {"answer": response.text}
     except Exception as e:
